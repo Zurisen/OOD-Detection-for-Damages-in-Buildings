@@ -39,7 +39,7 @@ from ignite.contrib.handlers import ProgressBar
 import warnings
 #%%
 
-def show(tensor, num=25, wandbactive=0, name=''):
+def show(tensor, num=25, path='', name=''):
     '''
     Plots grid of input images given Pytorch images batch.
     '''
@@ -48,7 +48,7 @@ def show(tensor, num=25, wandbactive=0, name=''):
 
     plt.imshow(grid.clip(0,1))
     plt.axis('off')
-    plt.show()
+    plt.savefig(os.path.join(path,name))
     plt.axis('off')
     
     

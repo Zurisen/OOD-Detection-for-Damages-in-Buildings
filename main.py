@@ -37,6 +37,7 @@ import ignite.distributed as idist
 from ignite.metrics import FID, InceptionScore
 from ignite.contrib.handlers import ProgressBar
 import warnings
+import sys
 from utils import *
 from dataloaders import image_loader
 from WGAN import *
@@ -46,9 +47,9 @@ from WGAN import *
 # TAG = argv[2]
 # DATA_PATH = argv[2]
 
-NET = 'WGAN'
-TAG = 'WGAN_spalling'
-DATA_PATH = './data_crops_spalling/imageClustersV130B130/accepted/'
+NET = sys.argv[1]
+TAG = sys.argv[2]
+DATA_PATH = sys.argv[3]
 
 if __name__ == "__main__":
     

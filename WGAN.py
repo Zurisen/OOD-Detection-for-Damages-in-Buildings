@@ -135,6 +135,8 @@ class train_wgan():
         ## Class variables
         self.gen_losses = []
         self.crit_losses = []
+        self.fids = []
+        self.iss = []
         self.cur_step = 0
         self.epoch = 0
         
@@ -151,8 +153,8 @@ class train_wgan():
         ## Initialize Generator and Discriminator (Critic) classes 
         self.gen = Generator(z_dim=z_dim).to(self.device)
         self.crit = Critic().to(self.device)
-        self.gen=self.gen.apply(init_weights)
-        self.crit=self.crit.apply(init_weights)
+        #self.gen=self.gen.apply(init_weights)
+        #self.crit=self.crit.apply(init_weights)
         
         ## Different optimizer options for generator and discriminator
         self.crit_opt = optim.Adam(self.crit.parameters(),
@@ -190,36 +192,38 @@ class train_wgan():
     def training_losses(self):
         gen_mean=sum(self.gen_losses[-self.show_step:]) / self.show_step
         crit_mean = sum(self.crit_losses[-self.show_step:]) / self.show_step
-        print(f"Epoch: {self.epoch}: Step {self.cur_step}: Generator loss: {self.gen_mean}, critic loss: {self.crit_mean}")
+        print(f"Epoch: {self.epoch}: Step {self.cur_step}: Generator loss: {gen_mean}, critic loss: {crit_mean}")
     
     def evaluate_fid_is(self):
         self.evaluator.run(self.test_dataloader,max_epochs=1)
         metrics = self.evaluator.state.metrics
         fid_score = metrics['fid']
+        self.fids += [fid_score]
         is_score = metrics['is']
+        self.iss += [is_score]
         print(f"*   FID : {fid_score:4f}")
         print(f"*    IS : {is_score:4f}")
         
     def save_checkpoint(self):
         torch.save({
-          'epoch': self.epoch,
-          'gen_losses': self.gen_losses,
-          'crit_losses': self.crit_losses,
-          'fids': self.evaluator.state.metrics['fid'],
-          'iss': self.evaluator.state.metrics['is'],        
+          'epoch': self.epoch,     
           'model_state_dict': self.gen.state_dict(),
           'optimizer_state_dict': self.gen_opt.state_dict()      
         }, f"{self.root_path}Generator.pkl")
     
         torch.save({
           'epoch': self.epoch,
-          'crit_losses': self.crit_losses,
-          'fids': self.evaluator.state.metrics['fid'],
-          'iss': self.evaluator.state.metrics['is'],
           'model_state_dict': self.crit.state_dict(),
           'optimizer_state_dict': self.crit_opt.state_dict()      
         }, f"{self.root_path}Critic.pkl")
-      
+        
+        torch.save({
+          'epoch': self.epoch,
+          'crit_losses': self.crit_losses,
+          'gen_losses':self.gen_losses,
+          'fids': self.fids,
+          'iss': self.iss
+        }, f"{self.root_path}Metrics.pkl")      
         print("Saved checkpoint")
     
     def load_checkpoint(self):
@@ -251,7 +255,7 @@ class train_wgan():
         
                     alpha=torch.rand(len(real),1,1,1,device=self.device,
                                      requires_grad=True) # 128 x 1 x 1 x 1
-                    gp = get_gp(real, fake.detach(), crit, alpha)
+                    gp = get_gp(real, fake.detach(), self.crit, alpha)
         
                     crit_loss = crit_fake_pred.mean() - crit_real_pred.mean() + gp
         
@@ -277,11 +281,12 @@ class train_wgan():
                 ### STATS  
                 if (self.cur_step % self.show_step == 0 and self.cur_step > 0):
                     self.evaluate_fid_is()
-                    show(fake, wandbactive=1, name='fake')
-                    show(real, wandbactive=1, name='real')
+                    show(fake, path=self.root_path, name=str(self.epoch))
+                    #show(real, path=self.root_path, name=str(self.epoch))
+
                     self.training_losses()
                     
-                    print("Saving checkpoint: ", self.cur_step, self.save_step)
+                    print("Saving checkpoint...")
                     self.save_checkpoint()
         
                 self.cur_step+=1
