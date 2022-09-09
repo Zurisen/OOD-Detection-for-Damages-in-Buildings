@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Fri Sep  9 11:03:34 2022
+Created on Fri Sep  9 14:38:06 2022
 
 @author: cmt
 """
@@ -41,95 +41,69 @@ from utils import *
 #%%
 
 class Generator(nn.Module):
-    def __init__(self, z_dim=64, d_dim=16):
+    def __init__(self, z_dim=100):
         super(Generator, self).__init__()
-        self.z_dim=z_dim
-
-        self.gen = nn.Sequential(
-                ## ConvTranspose2d: in_channels, out_channels, kernel_size, stride=1, padding=0
-                ## Calculating new width and height: (n-1)*stride -2*padding +ks
-                ## n = width or height
-                ## ks = kernel size
-                ## we begin with a 1x1 image with z_dim number of channels (200)
-                nn.ConvTranspose2d(z_dim, d_dim * 32, 4, 1, 0), ## 4x4 (ch: 200, 512)
-                nn.BatchNorm2d(d_dim*32),
-                nn.ReLU(True),
-
-                nn.ConvTranspose2d(d_dim*32, d_dim*16, 4, 2, 1), ## 8x8 (ch: 512, 256)
-                nn.BatchNorm2d(d_dim*16),
-                nn.ReLU(True),
-
-                nn.ConvTranspose2d(d_dim*16, d_dim*8, 4, 2, 1), ## 16x16 (ch: 256, 128)
-                #(n-1)*stride -2*padding +ks = (8-1)*2-2*1+4=16
-                nn.BatchNorm2d(d_dim*8),
-                nn.ReLU(True),
-
-                nn.ConvTranspose2d(d_dim*8, d_dim*4, 4, 2, 1), ## 32x32 (ch: 128, 64)
-                nn.BatchNorm2d(d_dim*4),
-                nn.ReLU(True),            
-
-                nn.ConvTranspose2d(d_dim*4, d_dim*2, 4, 2, 1), ## 64x64 (ch: 64, 32)
-                nn.BatchNorm2d(d_dim*2),
-                nn.ReLU(True),            
-
-                nn.ConvTranspose2d(d_dim*2, 3, 4, 2, 1), ## 128x128 (ch: 32, 3)
-                nn.Tanh() ### produce result in the range from -1 to 1
+        self.z_dim = z_dim
+        self.model = nn.Sequential(
+            nn.ConvTranspose2d(z_dim, 512, 4, 1, 0, bias=False),
+            nn.BatchNorm2d(512),
+            nn.ReLU(True),
+            # state size. 512 x 4 x 4
+            nn.ConvTranspose2d(512, 256, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(256),
+            nn.ReLU(True),
+            # state size. 256 x 8 x 8
+            nn.ConvTranspose2d(256, 128, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(128),
+            nn.ReLU(True),
+            # state size. 128 x 16 x 16
+            nn.ConvTranspose2d(128, 64, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(64),
+            nn.ReLU(True),
+            # state size. 64 x 32 x 32
+            nn.ConvTranspose2d(64, 3, 4, 2, 1, bias=False),
+            nn.Tanh()
+            # final state size. 3 x 64 x 64
         )
-
 
     def forward(self, noise):
-        x=noise.view(len(noise), self.z_dim, 1, 1)  # 128 x 200 x 1 x 1
-        return self.gen(x)
-
+        x = self.model(noise.view(len(noise), self.z_dim, 1, 1))
+        return x
+    
 
 class Critic(nn.Module):
-    def __init__(self, d_dim=16):
+    def __init__(self):
         super(Critic, self).__init__()
-
-        self.crit = nn.Sequential(
-          # Conv2d: in_channels, out_channels, kernel_size, stride=1, padding=0
-          ## New width and height: # (n+2*pad-ks)//stride +1
-          nn.Conv2d(3, d_dim, 4, 2, 1), #(n+2*pad-ks)//stride +1 = (128+2*1-4)//2+1=64x64 (ch: 3,16)
-          nn.InstanceNorm2d(d_dim), 
-          nn.LeakyReLU(0.2),
-
-          nn.Conv2d(d_dim, d_dim*2, 4, 2, 1), ## 32x32 (ch: 16, 32)
-          nn.InstanceNorm2d(d_dim*2), 
-          nn.LeakyReLU(0.2),
-
-          nn.Conv2d(d_dim*2, d_dim*4, 4, 2, 1), ## 16x16 (ch: 32, 64)
-          nn.InstanceNorm2d(d_dim*4), 
-          nn.LeakyReLU(0.2),
-
-          nn.Conv2d(d_dim*4, d_dim*8, 4, 2, 1), ## 8x8 (ch: 64, 128)
-          nn.InstanceNorm2d(d_dim*8), 
-          nn.LeakyReLU(0.2),
-
-          nn.Conv2d(d_dim*8, d_dim*16, 4, 2, 1), ## 4x4 (ch: 128, 256)
-          nn.InstanceNorm2d(d_dim*16), 
-          nn.LeakyReLU(0.2),
-
-          nn.Conv2d(d_dim*16, 1, 4, 1, 0), #(n+2*pad-ks)//stride +1=(4+2*0-4)//1+1= 1X1 (ch: 256,1)
-
+        self.model = nn.Sequential(
+            # input is 3 x 64 x 64
+            nn.Conv2d(3, 64, 4, 2, 1, bias=False),
+            nn.LeakyReLU(0.2, inplace=True),
+            # state size. 64 x 32 x 32
+            nn.Conv2d(64, 128, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(128),
+            nn.LeakyReLU(0.2, inplace=True),
+            # state size. 128 x 16 x 16
+            nn.Conv2d(128, 256, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(256),
+            nn.LeakyReLU(0.2, inplace=True),
+            # state size. 256 x 8 x 8
+            nn.Conv2d(256, 512, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(512),
+            nn.LeakyReLU(0.2, inplace=True),
+            # state size. 512 x 4 x 4
+            nn.Conv2d(512, 1, 4, 1, 0, bias=False),
+            nn.Sigmoid()
         )
 
+    def forward(self, x):
+        x = self.model(x)
+        return x
+    
+    
+def gen_noise(num, z_dim, device='cuda'):
+    return torch.randn(num, z_dim, device=device) # 128 x 200
 
-    def forward(self, image):
-        # image: 128 x 3 x 128 x 128
-        crit_pred = self.crit(image) # 128 x 1 x 1 x 1
-        return crit_pred.view(len(crit_pred),-1) ## 128 x 1  
-  
-
-def init_weights(m):
-    if isinstance(m, nn.Conv2d) or isinstance(m,nn.ConvTranspose2d):
-        torch.nn.init.normal_(m.weight, 0.0, 0.02)
-        torch.nn.init.constant_(m.bias,0)
-
-    if isinstance(m,nn.BatchNorm2d):
-        torch.nn.init.normal_(m.weight, 0.0, 0.02)
-        torch.nn.init.constant_(m.bias,0)
-
-class train_wgan():
+class train_dcgan():
     def __init__(self, train_dataloader, test_dataloader, z_dim, tag):
         
         ## Class variables
@@ -158,9 +132,10 @@ class train_wgan():
         
         ## Different optimizer options for generator and discriminator
         self.crit_opt = optim.Adam(self.crit.parameters(),
-                                   lr=1e-4, betas=(0.5, 0.9))
+                                   lr=2e-4, betas=(0.5, 0.999))
         self.gen_opt = optim.Adam(self.gen.parameters(),
-                                  lr=1e-4, betas=(0.5, 0.9))
+                                  lr=2e-4, betas=(0.5, 0.999))
+        self.criterion = nn.BCELoss()
         
         ## Evaluator for metrics
         self.fid_metric = FID(device=self.device)
@@ -238,45 +213,59 @@ class train_wgan():
         print("Loaded checkpoint")
         
     def run(self):
+        real_label = 1
+        fake_label = 0
         for self.epoch in range(self.n_epochs):
             for real, _ in tqdm(self.train_dataloader):
                 cur_bs= len(real) #128
                 real=real.to(self.device)
+                self.crit_opt.zero_grad()
+                # Format batch
+                b_size = real.size(0)
+                label = torch.full((b_size,), real_label,
+                                   dtype=torch.float, device=self.device)
+                # Forward pass real batch through D
+                output1 = self.crit(real).view(-1)
+                # Calculate loss on all-real batch
+                crit_loss_real = self.criterion(output1, label)
+                # Calculate gradients for D in backward pass
+                crit_loss_real.backward()
         
-                ### CRITIC
-                mean_crit_loss = 0
-                for _ in range(self.crit_cycles):
-                    self.crit_opt.zero_grad()
-        
-                    noise=gen_noise(cur_bs, self.z_dim)
-                    fake = self.gen(noise)
-                    crit_fake_pred = self.crit(fake.detach())
-                    crit_real_pred = self.crit(real)
-        
-                    alpha=torch.rand(len(real),1,1,1,device=self.device,
-                                     requires_grad=True) # 128 x 1 x 1 x 1
-                    gp = get_gp(real, fake.detach(), self.crit, alpha)
-        
-                    crit_loss = crit_fake_pred.mean() - crit_real_pred.mean() + gp
-        
-                    mean_crit_loss+=crit_loss.item() / self.crit_cycles
-        
-                    crit_loss.backward(retain_graph=True)
-                    self.crit_opt.step()
-        
-                self.crit_losses+=[mean_crit_loss]
-        
-                ### GENERATOR
-                self.gen_opt.zero_grad()
-                noise = gen_noise(cur_bs, self.z_dim)
+                ## Train with all-fake batch
+                # Generate batch of latent vectors
+                noise = torch.randn(b_size, self.z_dim, 1, 1, 
+                                    device=self.device)
+                # Generate fake image batch with G
                 fake = self.gen(noise)
-                crit_fake_pred = self.crit(fake)
+                label.fill_(fake_label)
+                # Classify all fake batch with D
+                output2 = self.crit(fake.detach()).view(-1)
+                # Calculate D's loss on the all-fake batch
+                crit_loss_fake = self.criterion(output2, label)
+                # Calculate the gradients for this batch, accumulated (summed) with previous gradients
+                crit_loss_fake.backward()
+                # Compute error of D as sum over the fake and the real batches
+                crit_loss = crit_loss_real + crit_loss_fake
+                # Update D
+                self.crit_opt.step()
+                
+                crit_losses += [crit_loss.item()]
         
-                gen_loss = -crit_fake_pred.mean()
+                ############################
+                # (2) Update G network: maximize log(D(G(z)))
+                ###########################
+                self.gen_opt.zero_grad()
+                label.fill_(real_label)  # fake labels are real for generator cost
+                # Since we just updated D, perform another forward pass of all-fake batch through D
+                output3 = self.crit(fake).view(-1)
+                # Calculate G's loss based on this output
+                gen_loss = self.criterion(output3, label)
+                # Calculate gradients for G
                 gen_loss.backward()
+                # Update G
                 self.gen_opt.step()
-        
-                self.gen_losses+=[gen_loss.item()]
+                
+                gen_losses+=[gen_loss.item()]
         
                 ### STATS  
                 if (self.cur_step % self.show_step == 0 and self.cur_step > 0):

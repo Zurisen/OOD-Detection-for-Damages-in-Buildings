@@ -71,6 +71,9 @@ if __name__ == "__main__":
     if NET == "WGAN":
         wgan = train_wgan(train_dataloader, test_dataloader, z_dim, TAG)
         wgan.run()
+    elif NET == "DCGAN":
+        dcgan = train_dcgan(train_dataloader, test_dataloader, z_dim, TAG)
+        dcgan.run()
     else:
         raise NotImplementedError("Unavailable GAN")
     
