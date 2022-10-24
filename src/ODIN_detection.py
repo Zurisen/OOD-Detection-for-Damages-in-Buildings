@@ -17,7 +17,7 @@ from scipy import misc
 import argparse
 
 parser = argparse.ArgumentParser(description='Test code - measure OOD detection performance using ODIN')
-parser.add_argument('--batch-size', type=int, default=128, help='batch size')
+parser.add_argument('--batch-size', type=int, default=1, help='batch size')
 parser.add_argument('--no-cuda', action='store_true', default=False, help='disables CUDA')
 parser.add_argument('--seed', type=int, default=1, help='random seed')
 parser.add_argument('--dataset', required=True, help='target dataset: Din1')
@@ -25,7 +25,6 @@ parser.add_argument('--dataroot', required=True, help='path to dataset')
 parser.add_argument('--imageSize', type=int, default=32, help='the height/width of the input image to network')
 parser.add_argument('--outf', default='./outf_res/unnamedODIN', help='folder to output the softmax results')
 parser.add_argument('--out_dataset', required=True, help='out-of-dist dataset: Dout1')
-parser.add_argument('--num_classes', required=True, type=int, default=3, help='number of classes')
 parser.add_argument('--pre_trained_net', required=True, default='', help='path to pre trained net')
 parser.add_argument('--noise', type=float, default=0.0014, help='ODIN noise')
 parser.add_argument('--temperature', type=int, default=1000, help='ODIN temperature')
@@ -36,6 +35,12 @@ args.cuda = not args.no_cuda and torch.cuda.is_available()
 print("Random Seed: ", args.seed)
 torch.manual_seed(args.seed)
 
+if args.dataset == 'Din1':
+    num_classes = 2
+elif args.dataset == 'Din2':
+    num_classes = 3
+
+
 if not os.path.exists(args.outf):
     os.mkdir(args.outf)
 if args.cuda:
@@ -44,7 +49,7 @@ if args.cuda:
 kwargs = {'num_workers':1, 'pin_memory': True} if args.cuda else {}
 
 print('Load model')
-model = models.vgg13(num_classes=args.num_classes)
+model = models.vgg13(num_classes=num_classes)
 model.load_state_dict(torch.load(args.pre_trained_net))
 #print(model)
 

@@ -22,20 +22,36 @@ parser.add_argument('--lr', type=float, default=0.0002, help='learning rate')
 parser.add_argument('--no-cuda', action='store_true', default=False, help='disables CUDA training')
 parser.add_argument('--seed', type=int, default=1, help='random seed')
 parser.add_argument('--log-interval', type=int, default=100, help='how many batches to wait before logging training status')
-parser.add_argument('--dataset', default='Din1', help='Din1')
+parser.add_argument('--dataset', required=True, default='Din1', help='Din1')
 parser.add_argument('--dataroot', required=True, help='path to dataset')
 parser.add_argument('--imageSize', type=int, default=32, help='the height / width of the input image to network')
 parser.add_argument('--outf', default='./outf/basicmodel', help='folder to output images and model checkpoints')
 parser.add_argument('--wd', type=float, default=0.0, help='weight decay')
-parser.add_argument('--num_classes', type=int, required=True, default=3, help=' Number # of classification classes')
 parser.add_argument('--droprate', type=float, default=0.1, help='learning rate decay')
 parser.add_argument('--decreasing_lr', default='60', help='decreasing strategy')
+parser.add_argument('--synth_data', type=str, default='None', help='synthetic WGAN data: "10", "20", "70"')
+
 
 args = parser.parse_args()
 print(args)
 args.cuda = not args.no_cuda and torch.cuda.is_available()
 print("Random Seed: ", args.seed)
 torch.manual_seed(args.seed)
+
+if args.synth_data == "None":
+    args.synth_data = ''
+
+if args.dataset == 'Din1':
+    num_classes = 2
+elif args.dataset == 'Din2':
+    num_classes = 3
+
+
+synth_data_string = "_synth"+str(args.synth_data) if args.synth_data != '' else ''
+args.outf = '/work3/s202464/master-thesis/src/outf/ce'+'_'+args.dataset+'_'+str(num_classes) + synth_data_string
+
+if not os.path.exists(args.outf):
+    os.mkdir(args.outf)
 
 if args.cuda:
     torch.cuda.manual_seed(args.seed)
@@ -44,11 +60,11 @@ kwargs = {'num_workers': 1, 'pin_memory': True} if args.cuda else {}
 
 print('load data: ',args.dataset)
 train_loader, test_loader = data_loader.getTargetDataSet(args.dataset, args.batch_size,
-        args.imageSize, os.path.join(args.dataroot,args.dataset))
+        args.imageSize, os.path.join(args.dataroot,args.dataset), synth_data = args.synth_data)
 
 print('Load model')
-model = models.vgg13(num_classes=args.num_classes)
-print(model)
+model = models.vgg13(num_classes=num_classes)
+#print(model)
 
 if args.cuda:
     model.cuda()

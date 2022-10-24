@@ -21,7 +21,10 @@ def tpr95(dir_name, method='baseline'):
     elif method == 'odin':
         cifar = np.loadtxt('%s/confidence_ODIN_In.txt'%dir_name, delimiter=',')
         other = np.loadtxt('%s/confidence_ODIN_Out.txt'%dir_name, delimiter=',')    
-    
+    elif method == 'mahalanobis':
+        cifar = np.loadtxt('%s/confidence_Ga0_In.txt'%dir_name, delimiter='/')
+        other = np.loadtxt('%s/confidence_Ga0_Out.txt'%dir_name, delimiter='/')
+
     Y1 = other
     X1 = cifar
     end = np.max([np.max(X1), np.max(Y1)])
@@ -57,6 +60,12 @@ def auroc(dir_name, method='baseline'):
         f2 = open('%s/Update_ODIN_ROC_fpr.txt'%dir_name, 'w') 
         cifar = np.loadtxt('%s/confidence_ODIN_In.txt'%dir_name, delimiter=',')
         other = np.loadtxt('%s/confidence_ODIN_Out.txt'%dir_name, delimiter=',')    
+    elif method == 'mahalanobis':
+        f1 = open('%s/Update_Mahalanobis_ROC_tpr.txt'%dir_name, 'w')
+        f2 = open('%s/Update_Mahalanobis_ROC_fpr.txt'%dir_name, 'w') 
+        cifar = np.loadtxt('%s/confidence_Ga0_In.txt'%dir_name, delimiter='/')
+        other = np.loadtxt('%s/confidence_Ga0_Out.txt'%dir_name, delimiter='/')
+
     Y1 = other
     X1 = cifar
     end = np.max([np.max(X1), np.max(Y1)])
@@ -83,6 +92,9 @@ def auprIn(dir_name, method='baseline'):
     elif method == 'odin':
         cifar = np.loadtxt('%s/confidence_ODIN_In.txt'%dir_name, delimiter=',')
         other = np.loadtxt('%s/confidence_ODIN_Out.txt'%dir_name, delimiter=',')    
+    elif method == 'mahalanobis':
+        cifar = np.loadtxt('%s/confidence_Ga0_In.txt'%dir_name, delimiter='/')
+        other = np.loadtxt('%s/confidence_Ga0_Out.txt'%dir_name, delimiter='/')
  
     precisionVec = []
     recallVec = []
@@ -116,6 +128,9 @@ def auprOut(dir_name, method='baseline'):
     elif method == 'odin':
         cifar = np.loadtxt('%s/confidence_ODIN_In.txt'%dir_name, delimiter=',')
         other = np.loadtxt('%s/confidence_ODIN_Out.txt'%dir_name, delimiter=',')    
+    elif method == 'mahalanobis':
+        cifar = np.loadtxt('%s/confidence_Ga0_In.txt'%dir_name, delimiter='/')
+        other = np.loadtxt('%s/confidence_Ga0_Out.txt'%dir_name, delimiter='/')
  
     Y1 = other
     X1 = cifar
@@ -145,6 +160,9 @@ def detection(dir_name, method='baseline'):
     elif method == 'odin':
         cifar = np.loadtxt('%s/confidence_ODIN_In.txt'%dir_name, delimiter=',')
         other = np.loadtxt('%s/confidence_ODIN_Out.txt'%dir_name, delimiter=',')    
+    elif method == 'mahalanobis':
+        cifar = np.loadtxt('%s/confidence_Ga0_In.txt'%dir_name, delimiter='/')
+        other = np.loadtxt('%s/confidence_Ga0_Out.txt'%dir_name, delimiter='/')
     Y1 = other
     X1 = cifar
     end = np.max([np.max(X1), np.max(Y1)])

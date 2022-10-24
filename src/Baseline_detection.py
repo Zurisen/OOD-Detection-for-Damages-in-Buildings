@@ -31,7 +31,6 @@ parser.add_argument('--dataroot', required=True, help='path to dataset')
 parser.add_argument('--imageSize', type=int, default=32, help='the height / width of the input image to network')
 parser.add_argument('--outf', default='./outf_res', help='folder to output images and model checkpoints')
 parser.add_argument('--out_dataset', required=True, help='out-of-dist dataset: Dout1')
-parser.add_argument('--num_classes', required=True, type=int, default=3, help='number of classes')
 parser.add_argument('--pre_trained_net', required=True, default='', help="path to pre trained_net")
 
 args = parser.parse_args()
@@ -40,15 +39,20 @@ args.cuda = not args.no_cuda and torch.cuda.is_available()
 print("Random Seed: ", args.seed)
 torch.manual_seed(args.seed)
 
+if args.dataset == 'Din1':
+    num_classes = 2
+elif args.dataset == 'Din2':
+    num_classes = 3
+
 if args.cuda:
     torch.cuda.manual_seed(args.seed)
 
 kwargs = {'num_workers': 1, 'pin_memory': True} if args.cuda else {}
 
 print('Load model')
-model = models.vgg13(num_classes=args.num_classes)
+model = models.vgg13(num_classes=num_classes)
 model.load_state_dict(torch.load(args.pre_trained_net))
-print(model)
+#print(model)
 
 print('load target data: ',args.dataset)
 _, test_loader = data_loader.getTargetDataSet(args.dataset, args.batch_size, 

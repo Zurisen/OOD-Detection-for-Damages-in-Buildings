@@ -29,15 +29,28 @@ parser.add_argument('--outf', default='./outf/ganmodel', help='folder to output 
 parser.add_argument('--wd', type=float, default=0.0, help='weight decay')
 parser.add_argument('--droprate', type=float, default=0.1, help='learning rate decay')
 parser.add_argument('--decreasing_lr', default='60', help='decreasing strategy')
-parser.add_argument('--num_classes', required=True, type=int, default=3, help='the # of classes')
 parser.add_argument('--beta', type=float, default=1, help='penalty parameter for KL term')
+parser.add_argument('--synth_data', type=str, default='None', help='synthetic WGAN data: "10", "20", "70"')
 
 args = parser.parse_args()
+if args.synth_data == "None":
+    args.synth_data = ''
+
+#if args.dataset == 'Din1':
+#    args.beta = 0.1
+#    args.batch_size = 128
 
 if args.dataset == 'Din1':
-    args.beta = 0.1
-    args.batch_size = 128
-    
+    num_classes = 2
+elif args.dataset == 'Din2':
+    num_classes = 3
+
+synth_data_string = "_synth"+str(args.synth_data) if args.synth_data != '' else ''
+args.outf = '/work3/s202464/master-thesis/src/outf/joint'+'_'+args.dataset+'_'+str(num_classes) + synth_data_string
+
+if not os.path.exists(args.outf):
+    os.mkdir(args.outf)
+
 print(args)
 args.cuda = not args.no_cuda and torch.cuda.is_available()
 print("Random Seed: ", args.seed)
@@ -50,12 +63,11 @@ kwargs = {'num_workers': 1, 'pin_memory': True} if args.cuda else {}
 
 print('load data: ',args.dataset)
 train_loader, test_loader = data_loader.getTargetDataSet(args.dataset, args.batch_size, 
-        args.imageSize, os.path.join(args.dataroot, args.dataset))
+        args.imageSize, os.path.join(args.dataroot, args.dataset), synth_data = args.synth_data)
 
 print('Load model')
-model = models.vgg13(num_classes=args.num_classes)
-
-print(model)
+model = models.vgg13(num_classes=num_classes)
+#print(model)
 
 print('load GAN')
 nz = 100
@@ -87,7 +99,7 @@ def train(epoch):
     for batch_idx, (data, target) in enumerate(train_loader):
 
         gan_target = torch.FloatTensor(target.size()).fill_(0)
-        uniform_dist = torch.Tensor(data.size(0), args.num_classes).fill_((1./args.num_classes))
+        uniform_dist = torch.Tensor(data.size(0), num_classes).fill_((1./num_classes))
 
         if args.cuda:
             data, target = data.cuda(), target.cuda()
@@ -95,10 +107,8 @@ def train(epoch):
 
         data, target, uniform_dist = Variable(data), Variable(target), Variable(uniform_dist)
 
-        ###########################
-        # (1) Update D network    #
-        ###########################
-        # train with real
+        #### Discriminator update ####
+        # Pass real images and backward propagate
         gan_target.fill_(real_label)
         targetv = Variable(gan_target)
         optimizerD.zero_grad()
@@ -107,7 +117,7 @@ def train(epoch):
         errD_real.backward()
         D_x = output.data.mean()
 
-        # train with fake
+        # Generate fake image from noise and update Discriminator weights
         noise = torch.FloatTensor(data.size(0), nz, 1, 1).normal_(0, 1).cuda()
         if args.cuda:
             noise = noise.cuda()
@@ -121,43 +131,41 @@ def train(epoch):
         errD = errD_real + errD_fake
         optimizerD.step()
 
-        ###########################
-        # (2) Update G network    #
-        ###########################
+        
+        #### Generator Update ####
         optimizerG.zero_grad()
-        # Original GAN loss
+        # Compute the original Generator loss
         targetv = Variable(gan_target.fill_(real_label))  
         output = netD(fake)
         errG = criterion(output, targetv.reshape(-1,1))
         D_G_z2 = output.data.mean()
 
-        # minimize the true distribution
+        # Compute the added KL divergence loss and update Generator weights
         KL_fake_output = F.log_softmax(model(fake))
-        errG_KL = F.kl_div(KL_fake_output, uniform_dist)*args.num_classes
+        errG_KL = F.kl_div(KL_fake_output, uniform_dist)*num_classes
         generator_loss = errG + args.beta*errG_KL
         generator_loss.backward()
         optimizerG.step()
 
-        ###########################
-        # (3) Update classifier   #
-        ###########################
-        # cross entropy loss
+        #### Classifier update ####
+        # original cross entropy loss
         optimizer.zero_grad()
         output = F.log_softmax(model(data))
         loss = F.nll_loss(output, target)
 
-        # KL divergence
+        # Compute KL divergence loss term for the classifier and update classifier
         noise = torch.FloatTensor(data.size(0), nz, 1, 1).normal_(0, 1).cuda()
         if args.cuda:
             noise = noise.cuda()
         noise = Variable(noise)
         fake = netG(noise)
         KL_fake_output = F.log_softmax(model(fake))
-        KL_loss_fake = F.kl_div(KL_fake_output, uniform_dist)*args.num_classes
+        KL_loss_fake = F.kl_div(KL_fake_output, uniform_dist)*num_classes
         total_loss = loss + args.beta*KL_loss_fake
         total_loss.backward()
         optimizer.step()
 
+        ## Print stats
         if batch_idx % args.log_interval == 0:
             print('Classification Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}, KL fake Loss: {:.6f}'.format(
                 epoch, batch_idx * len(data), len(train_loader.dataset),
@@ -166,6 +174,9 @@ def train(epoch):
             vutils.save_image(fake.data, '%s/gan_samples_epoch_%03d.png'%(args.outf, epoch), normalize=True)
 
 def test(epoch):
+    '''
+    Function for evaluating test set performance per epoch.
+    '''
     model.eval()
     test_loss = 0
     correct = 0
@@ -185,17 +196,23 @@ def test(epoch):
     print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
         test_loss, correct, total,
         100. * correct / total))
+    return (correct/total)
 
-
+#################
+### Main loop ###
+#################
+acc = 0.0
 for epoch in range(1, args.epochs + 1):
     train(epoch)
-    test(epoch)
+    acc_ = test(epoch)
     if epoch in decreasing_lr:
         optimizerG.param_groups[0]['lr'] *= args.droprate
         optimizerD.param_groups[0]['lr'] *= args.droprate
         optimizer.param_groups[0]['lr'] *= args.droprate
-    if epoch % 20 == 0:
+    if acc_ > acc:
         # do checkpointing
-        torch.save(netG.state_dict(), '%s/netG_epoch_%d.pth' % (args.outf, epoch))
-        torch.save(netD.state_dict(), '%s/netD_epoch_%d.pth' % (args.outf, epoch))
-        torch.save(model.state_dict(), '%s/model_epoch_%d.pth' % (args.outf, epoch))
+        print('...saving checkpoint...')
+        torch.save(netG.state_dict(), '%s/netG.pth' % args.outf)
+        torch.save(netD.state_dict(), '%s/netD.pth' % args.outf)
+        torch.save(model.state_dict(), '%s/model.pth' % args.outf)
+        acc = acc_
