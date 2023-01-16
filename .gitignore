@@ -1,6 +1,5 @@
 *.png
 *.jpg
-*.svg
 *.jpeg
 *.pkl
 *.pth
