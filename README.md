@@ -2,6 +2,7 @@
 This is the main repository for the the master thesis "Generation of OOD Data for Damage Detection in Buildings".
 It contains the code for training the networks mentioned in the thesis and saving the results.
 
+<img align="middle" alt="Python" width="800px" src="etc/GANandVGG.svg" />
 
 # Usage
 1. Install dependencies `pip install -r requirements.txt`
