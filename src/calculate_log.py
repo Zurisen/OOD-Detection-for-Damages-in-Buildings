@@ -16,17 +16,17 @@ from scipy import misc
 def tpr95(dir_name, method='baseline'):
     #calculate the falsepositive error when tpr is 95%
     if method == 'baseline':
-        cifar = np.loadtxt('%s/confidence_Base_In.txt'%dir_name, delimiter=',')
+        indist = np.loadtxt('%s/confidence_Base_In.txt'%dir_name, delimiter=',')
         other = np.loadtxt('%s/confidence_Base_Out.txt'%dir_name, delimiter=',')
     elif method == 'odin':
-        cifar = np.loadtxt('%s/confidence_ODIN_In.txt'%dir_name, delimiter=',')
+        indist = np.loadtxt('%s/confidence_ODIN_In.txt'%dir_name, delimiter=',')
         other = np.loadtxt('%s/confidence_ODIN_Out.txt'%dir_name, delimiter=',')    
     elif method == 'mahalanobis':
-        cifar = np.loadtxt('%s/confidence_Ga0_In.txt'%dir_name, delimiter='/')
+        indist = np.loadtxt('%s/confidence_Ga0_In.txt'%dir_name, delimiter='/')
         other = np.loadtxt('%s/confidence_Ga0_Out.txt'%dir_name, delimiter='/')
 
     Y1 = other
-    X1 = cifar
+    X1 = indist
     end = np.max([np.max(X1), np.max(Y1)])
     start = np.min([np.min(X1),np.min(Y1)])
     gap = (end- start)/200000 # precision:200000
@@ -53,21 +53,21 @@ def auroc(dir_name, method='baseline'):
     if method == 'baseline':
         f1 = open('%s/Update_Base_ROC_tpr.txt'%dir_name, 'w')
         f2 = open('%s/Update_Base_ROC_fpr.txt'%dir_name, 'w')
-        cifar = np.loadtxt('%s/confidence_Base_In.txt'%dir_name, delimiter=',')
+        indist = np.loadtxt('%s/confidence_Base_In.txt'%dir_name, delimiter=',')
         other = np.loadtxt('%s/confidence_Base_Out.txt'%dir_name, delimiter=',')
     elif method == 'odin':
         f1 = open('%s/Update_ODIN_ROC_tpr.txt'%dir_name, 'w')
         f2 = open('%s/Update_ODIN_ROC_fpr.txt'%dir_name, 'w') 
-        cifar = np.loadtxt('%s/confidence_ODIN_In.txt'%dir_name, delimiter=',')
+        indist = np.loadtxt('%s/confidence_ODIN_In.txt'%dir_name, delimiter=',')
         other = np.loadtxt('%s/confidence_ODIN_Out.txt'%dir_name, delimiter=',')    
     elif method == 'mahalanobis':
         f1 = open('%s/Update_Mahalanobis_ROC_tpr.txt'%dir_name, 'w')
         f2 = open('%s/Update_Mahalanobis_ROC_fpr.txt'%dir_name, 'w') 
-        cifar = np.loadtxt('%s/confidence_Ga0_In.txt'%dir_name, delimiter='/')
+        indist = np.loadtxt('%s/confidence_Ga0_In.txt'%dir_name, delimiter='/')
         other = np.loadtxt('%s/confidence_Ga0_Out.txt'%dir_name, delimiter='/')
 
     Y1 = other
-    X1 = cifar
+    X1 = indist
     end = np.max([np.max(X1), np.max(Y1)])
     start = np.min([np.min(X1),np.min(Y1)])
     gap = (end- start)/200000
@@ -87,19 +87,19 @@ def auroc(dir_name, method='baseline'):
 def auprIn(dir_name, method='baseline'):
     #calculate the AUPR
     if method == 'baseline':
-        cifar = np.loadtxt('%s/confidence_Base_In.txt'%dir_name, delimiter=',')
+        indist = np.loadtxt('%s/confidence_Base_In.txt'%dir_name, delimiter=',')
         other = np.loadtxt('%s/confidence_Base_Out.txt'%dir_name, delimiter=',')
     elif method == 'odin':
-        cifar = np.loadtxt('%s/confidence_ODIN_In.txt'%dir_name, delimiter=',')
+        indist = np.loadtxt('%s/confidence_ODIN_In.txt'%dir_name, delimiter=',')
         other = np.loadtxt('%s/confidence_ODIN_Out.txt'%dir_name, delimiter=',')    
     elif method == 'mahalanobis':
-        cifar = np.loadtxt('%s/confidence_Ga0_In.txt'%dir_name, delimiter='/')
+        indist = np.loadtxt('%s/confidence_Ga0_In.txt'%dir_name, delimiter='/')
         other = np.loadtxt('%s/confidence_Ga0_Out.txt'%dir_name, delimiter='/')
  
     precisionVec = []
     recallVec = []
     Y1 = other
-    X1 = cifar
+    X1 = indist
     end = np.max([np.max(X1), np.max(Y1)])
     start = np.min([np.min(X1),np.min(Y1)])
     gap = (end- start)/200000
@@ -123,17 +123,17 @@ def auprIn(dir_name, method='baseline'):
 def auprOut(dir_name, method='baseline'):
     #calculate the AUPR
     if method == 'baseline':
-        cifar = np.loadtxt('%s/confidence_Base_In.txt'%dir_name, delimiter=',')
+        indist = np.loadtxt('%s/confidence_Base_In.txt'%dir_name, delimiter=',')
         other = np.loadtxt('%s/confidence_Base_Out.txt'%dir_name, delimiter=',')
     elif method == 'odin':
-        cifar = np.loadtxt('%s/confidence_ODIN_In.txt'%dir_name, delimiter=',')
+        indist = np.loadtxt('%s/confidence_ODIN_In.txt'%dir_name, delimiter=',')
         other = np.loadtxt('%s/confidence_ODIN_Out.txt'%dir_name, delimiter=',')    
     elif method == 'mahalanobis':
-        cifar = np.loadtxt('%s/confidence_Ga0_In.txt'%dir_name, delimiter='/')
+        indist = np.loadtxt('%s/confidence_Ga0_In.txt'%dir_name, delimiter='/')
         other = np.loadtxt('%s/confidence_Ga0_Out.txt'%dir_name, delimiter='/')
  
     Y1 = other
-    X1 = cifar
+    X1 = indist
     end = np.max([np.max(X1), np.max(Y1)])
     start = np.min([np.min(X1),np.min(Y1)])
     gap = (end- start)/200000
@@ -155,16 +155,16 @@ def auprOut(dir_name, method='baseline'):
 def detection(dir_name, method='baseline'):
     #calculate the minimum detection error
     if method == 'baseline':
-        cifar = np.loadtxt('%s/confidence_Base_In.txt'%dir_name, delimiter=',')
+        indist = np.loadtxt('%s/confidence_Base_In.txt'%dir_name, delimiter=',')
         other = np.loadtxt('%s/confidence_Base_Out.txt'%dir_name, delimiter=',')
     elif method == 'odin':
-        cifar = np.loadtxt('%s/confidence_ODIN_In.txt'%dir_name, delimiter=',')
+        indist = np.loadtxt('%s/confidence_ODIN_In.txt'%dir_name, delimiter=',')
         other = np.loadtxt('%s/confidence_ODIN_Out.txt'%dir_name, delimiter=',')    
     elif method == 'mahalanobis':
-        cifar = np.loadtxt('%s/confidence_Ga0_In.txt'%dir_name, delimiter='/')
+        indist = np.loadtxt('%s/confidence_Ga0_In.txt'%dir_name, delimiter='/')
         other = np.loadtxt('%s/confidence_Ga0_Out.txt'%dir_name, delimiter='/')
     Y1 = other
-    X1 = cifar
+    X1 = indist
     end = np.max([np.max(X1), np.max(Y1)])
     start = np.min([np.min(X1),np.min(Y1)])
     gap = (end- start)/200000

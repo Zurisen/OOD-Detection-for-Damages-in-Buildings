@@ -3,3 +3,5 @@
 *.svg
 *.jpeg
 *.pkl
+*.pth
+*.jpeg

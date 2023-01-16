@@ -41,11 +41,8 @@ import sys
 from utils import *
 from dataloaders import image_loader
 from WGAN import *
+from DCGAN import *
 
-
-# NET = argv[1]
-# TAG = argv[2]
-# DATA_PATH = argv[2]
 
 NET = sys.argv[1]
 TAG = sys.argv[2]
@@ -56,7 +53,7 @@ if __name__ == "__main__":
     image_size = 128 if (NET=="WGAN") else 64
     z_dim = 200 if (NET=="WGAN") else 100
     batch_size = 64
-    
+    TAG = NET + '_' + TAG    
 
     trainset = image_loader(train=True, image_size=image_size,
                             data_path=DATA_PATH)

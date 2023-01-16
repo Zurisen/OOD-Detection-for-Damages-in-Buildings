@@ -116,6 +116,41 @@ def getDin2(batch_size, img_size=32, data_root='../data/Din2', train=True, val=T
     return ds
 
 
+def getDall(batch_size, img_size=32, data_root='../data/Dall', train=True, val=True, synth_data='', **kwargs):
+    num_workers = kwargs.setdefault('num_workers', 1)
+    kwargs.pop('input_size', None)
+    print("Building Dall data loader with {} workers".format(num_workers))
+    ds = []
+    class_onehot = {"healthy":0, "crack":1, 'spalling':2, 'corrosion':3, 'efflorescence':4}
+    if train:
+        #trainset1 = DinDataset(True, img_size, class_onehot, 
+        #        data_root, trans=transforms.Compose([
+        #            transforms.Resize((img_size, img_size)),
+        #            transforms.RandomRotation(degrees=(90)),
+        #            transforms.ToTensor()
+        #            ]))
+        trainset2 = DinDataset(True, img_size, class_onehot, data_root,
+                synth_data=synth_data)
+        trainset3 = DinDataset(True, img_size, class_onehot, 
+                data_root, trans=transforms.Compose([
+                    transforms.Resize((img_size, img_size)),
+                    transforms.GaussianBlur(3),
+                    transforms.ToTensor()
+                    ]),
+                synth_data=synth_data)
+ 
+        train_loader = torch.utils.data.DataLoader(trainset2+trainset3,
+                batch_size=batch_size, shuffle=True, **kwargs)
+        ds.append(train_loader)
+    if val:
+        test_loader = torch.utils.data.DataLoader(DinDataset(False, img_size, class_onehot, data_root),
+                batch_size=batch_size, shuffle=False, **kwargs)
+        
+        ds.append(test_loader)
+    ds = ds[0] if len(ds)==1 else ds
+    return ds
+
+
 def getCIFAR10(batch_size, img_size=32, data_root='/tmp/public_dataset/pytorch', train=True, val=True, **kwargs):
     data_root = os.path.expanduser(os.path.join(data_root, 'cifar10-data'))
     num_workers = kwargs.setdefault('num_workers', 1)
@@ -151,6 +186,9 @@ def getTargetDataSet(data_type, batch_size, imageSize, dataroot, synth_data=''):
         train_loader, test_loader = getDin1(batch_size=batch_size, img_size=imageSize, data_root=dataroot, num_workers=1, synth_data=synth_data)
     if data_type == 'Din2':
         train_loader, test_loader = getDin2(batch_size=batch_size, img_size=imageSize,data_root=dataroot, num_workers=1, synth_data=synth_data)
+    if data_type == 'Dall':
+        train_loader, test_loader = getDall(batch_size=batch_size, img_size=imageSize,data_root=dataroot, num_workers=1, synth_data=synth_data)
+    
     return train_loader, test_loader
 
 
@@ -161,6 +199,9 @@ def getNonTargetDataSet(data_type, batch_size, imageSize, dataroot):
     if data_type == 'Din2':
         _, test_loader = getDin2(batch_size=batch_size, img_size=imageSize, data_root=dataroot, num_workers=1)
 
+    if data_type == 'Dall':
+        _, test_loader = getDall(batch_size=batch_size, img_size=imageSize, data_root=dataroot, num_workers=1)
+    
     elif data_type == 'Dout1':
         testsetout = datasets.ImageFolder(dataroot, transform= transforms.Compose(
             [transforms.Resize((imageSize, imageSize)),
